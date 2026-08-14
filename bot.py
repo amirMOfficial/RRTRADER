@@ -11,7 +11,7 @@ LIMIT = 250
 TELEGRAM_TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
 CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 
-BINANCE_URL = "BINANCE_URL = "https://data-api.binance.vision/api/v3/klines"
+BINANCE_URL = "https://data-api.binance.vision/api/v3/klines"
 TELEGRAM_URL = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
 
 
