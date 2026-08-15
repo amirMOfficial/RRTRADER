@@ -1,0 +1,14 @@
+{
+  "BTCUSDT": {
+    "locked": false,
+    "last_alert": null
+  },
+  "ETHUSDT": {
+    "locked": false,
+    "last_alert": null
+  },
+  "BNBUSDT": {
+    "locked": false,
+    "last_alert": null
+  }
+}
