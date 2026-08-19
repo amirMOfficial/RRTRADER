@@ -319,7 +319,7 @@ def build_message(data):
     time_text = now.strftime("%H:%M")
 
     message = f"""
-📊 <b>گزارش بازار بیت‌پین</b>
+📊 <b>قیمت لحظه‌ای دلار طلا بیتکوین</b>
 
 🟠 <b>Bitcoin (BTC)</b>
 
