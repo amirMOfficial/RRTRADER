@@ -119,53 +119,6 @@ def find_market(markets, base, quote):
     return None
 
 
-def get_tickers():
-    """
-    دریافت tickerهای Bitpin
-    """
-
-    data = api_get(
-        f"{BITPIN_API}/mkt/tickers/"
-    )
-
-    if isinstance(data, dict):
-
-        # حالت رایج API
-        if "results" in data:
-            return data["results"]
-
-        # در صورت تغییر ساختار
-        if "data" in data:
-            return data["data"]
-
-    if isinstance(data, list):
-        return data
-
-    raise RuntimeError(
-        "Unknown Bitpin ticker response format"
-    )
-
-
-def ticker_by_market_code(tickers, market_code):
-    """
-    پیدا کردن ticker بر اساس symbol بازار
-    """
-
-    target = market_code.upper()
-
-    for ticker in tickers:
-
-        code = str(
-            ticker.get("symbol")
-            or ticker.get("code")
-            or ticker.get("market")
-            or ""
-        ).upper()
-
-        if code == target:
-            return ticker
-
-    return None
 
 
 def get_price_from_ticker(ticker):
@@ -245,8 +198,6 @@ def fetch_market_data():
 
     markets = get_all_markets()
 
-    tickers = get_tickers()
-
     required_markets = {
         "BTC_IRT": ("BTC", "IRT"),
         "BTC_USDT": ("BTC", "USDT"),
@@ -268,36 +219,38 @@ def fetch_market_data():
         )
 
         if market is None:
-
             raise RuntimeError(
                 f"Bitpin market not found: {name}"
             )
 
-        code = market.get("code")
+        price = market.get("price")
 
-        ticker = ticker_by_market_code(
-            tickers,
-            code
-        )
-
-        if ticker is None:
-
+        if price is None:
             raise RuntimeError(
-                f"Ticker not found for: {code}"
+                f"Price not found for market: {name}"
             )
 
-        price = get_price_from_ticker(ticker)
+        try:
+            price = Decimal(str(price))
+        except InvalidOperation:
+            raise RuntimeError(
+                f"Invalid price for {name}: {price}"
+            )
 
         if price <= 0:
-
             raise RuntimeError(
-                f"Invalid price for {code}: {price}"
+                f"Invalid/non-positive price for {name}: {price}"
             )
 
         selected[name] = {
-            "code": code,
+            "code": market.get("code", name),
             "price": price,
         }
+
+    logger.info(
+        "Selected Bitpin markets: %s",
+        list(selected.keys())
+    )
 
     return selected
 
