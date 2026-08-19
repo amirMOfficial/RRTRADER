@@ -330,7 +330,6 @@ def build_message(data):
 
 USD:
 <b>${format_number(btc_usd, 2)}</b>
-
  IRR:
 <b>{format_number(btc_rial, 0)} IRR</b>
 
@@ -339,7 +338,6 @@ USD:
 
  USD:
 <b>${format_number(paxg_usd, 2)}</b>
-
 IRR:
 <b>{format_number(paxg_rial, 0)} IRR</b>
 
@@ -348,7 +346,6 @@ IRR:
 
  USD:
 <b>$1.00</b>
-
 IRR:
 <b>{format_number(usdt_rial, 0)} IRR</b>
 
@@ -356,7 +353,7 @@ IRR:
 🕐 <b>آخرین بروزرسانی:</b>
 {date_text} — {time_text}
 
-📌 منبع: 📌 منبع: <a href="https://bitpin.ir/signup/?ref=oDdSXxtY">Bitpin</a>
+📌 منبع: <a href="https://bitpin.ir/signup/?ref=oDdSXxtY">Bitpin</a>
 """.strip()
 
     return message
