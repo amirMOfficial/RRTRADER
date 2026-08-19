@@ -351,7 +351,7 @@ def build_message(data):
 🕐 <b>آخرین بروزرسانی:</b>
 {date_text} — {time_text}
 
-📌 منبع: Bitpin
+📌 منبع: 📌 منبع: <a href="https://bitpin.ir/signup/?ref=oDdSXxtY">Bitpin</a>
 """.strip()
 
     return message
