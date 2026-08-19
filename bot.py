@@ -153,12 +153,17 @@ def get_price_from_ticker(ticker):
 # =========================
 
 def format_number(value, decimals=0):
-
     value = Decimal(value)
 
     formatted = f"{value:,.{decimals}f}"
 
-    return formatted
+    # اطمینان از لاتین بودن اعداد
+    translation = str.maketrans(
+        "۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩",
+        "01234567890123456789"
+    )
+
+    return formatted.translate(translation)
 
 
 def rial_from_irt(irt_price):
@@ -323,29 +328,29 @@ def build_message(data):
 
 🟠 <b>Bitcoin (BTC)</b>
 
-🇺🇸 دلار:
+USD:
 <b>${format_number(btc_usd, 2)}</b>
 
-🇮🇷 ریال:
-<b>{format_number(btc_rial, 0)} ریال</b>
+ IRR:
+<b>{format_number(btc_rial, 0)} IRR</b>
 
 
-🟡 <b>PAX Gold (PAXG)</b>
+🟡 <b> Gold (PAXG)</b>
 
-🇺🇸 دلار:
+ USD:
 <b>${format_number(paxg_usd, 2)}</b>
 
-🇮🇷 ریال:
-<b>{format_number(paxg_rial, 0)} ریال</b>
+IRR:
+<b>{format_number(paxg_rial, 0)} IRR</b>
 
 
 🟢 <b>Tether (USDT)</b>
 
-🇺🇸 دلار:
+ USD:
 <b>$1.00</b>
 
-🇮🇷 ریال:
-<b>{format_number(usdt_rial, 0)} ریال</b>
+IRR:
+<b>{format_number(usdt_rial, 0)} IRR</b>
 
 
 🕐 <b>آخرین بروزرسانی:</b>
