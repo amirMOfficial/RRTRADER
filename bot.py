@@ -443,7 +443,6 @@ def build_message(data, previous_prices):
 
 🕐 <b>آخرین بروزرسانی:</b>
 {date_text} — {time_text}
-
 📌 منبع: <a href="https://bitpin.ir/signup/?ref=oDdSXxtY">Bitpin</a>
 """.strip()
 
