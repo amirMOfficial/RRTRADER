@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 from decimal import Decimal, InvalidOperation
-from datetime import datetime
+from datetime import jdatetime
 from zoneinfo import ZoneInfo
 
 import requests
@@ -320,8 +320,17 @@ def build_message(data):
 
     now = datetime.now(TIMEZONE)
 
-    date_text = now.strftime("%Y/%m/%d")
-    time_text = now.strftime("%H:%M")
+jalali_now = jdatetime.datetime.fromgregorian(
+    year=now.year,
+    month=now.month,
+    day=now.day,
+    hour=now.hour,
+    minute=now.minute,
+    second=now.second
+)
+
+date_text = jalali_now.strftime("%Y/%m/%d")
+time_text = jalali_now.strftime("%H:%M")
 
     message = f"""
 📊 <b>قیمت لحظه‌ای دلار طلا بیتکوین</b>
