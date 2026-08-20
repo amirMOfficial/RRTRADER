@@ -418,7 +418,6 @@ def build_message(data, previous_prices):
 
 🇺🇸 USD:
 <b>${format_number(btc_usd, 2)}</b>
-
 🇮🇷 IRR:
 <b>{format_number(btc_rial, 0)} IRR</b>
 
@@ -427,7 +426,6 @@ def build_message(data, previous_prices):
 
 🇺🇸 USD:
 <b>${format_number(paxg_usd, 2)}</b>
-
 🇮🇷 IRR:
 <b>{format_number(paxg_rial, 0)} IRR</b>
 
@@ -436,7 +434,6 @@ def build_message(data, previous_prices):
 
 🇺🇸 USD:
 <b>$1.00</b>
-
 🇮🇷 IRR:
 <b>{format_number(usdt_rial, 0)} IRR</b>
 
