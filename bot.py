@@ -321,12 +321,7 @@ def build_message(data):
     now = datetime.now(TIMEZONE)
 
 jalali_now = jdatetime.datetime.fromgregorian(
-    year=now.year,
-    month=now.month,
-    day=now.day,
-    hour=now.hour,
-    minute=now.minute,
-    second=now.second
+    datetime=now
 )
 
 date_text = jalali_now.strftime("%Y/%m/%d")
