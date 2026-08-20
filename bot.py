@@ -325,9 +325,7 @@ jalali_now = jdatetime.datetime.fromgregorian(
 )
 
 date_text = jalali_now.strftime("%Y/%m/%d")
-time_text = jalali_now.strftime("%H:%M")
-
-    message = f"""
+time_text = jalali_now.strftime("%H:%M").message = f"""
 📊 <b>قیمت لحظه‌ای دلار طلا بیتکوین</b>
 
 🟠 <b>Bitcoin (BTC)</b>
