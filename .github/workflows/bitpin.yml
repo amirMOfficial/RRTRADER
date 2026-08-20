@@ -5,8 +5,10 @@ on:
     # Every 4 hours
     - cron: "0 */4 * * *"
 
+  
   workflow_dispatch:
-
+permissions:
+  contents: write
 jobs:
 
   send-bitpin-report:
