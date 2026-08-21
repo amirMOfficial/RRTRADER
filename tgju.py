@@ -412,7 +412,10 @@ def get_tgju_price(symbol):
     )
 
     response.raise_for_status()
-
+if symbol == "price_dollar_rl":
+    print("===== DOLLAR DEBUG START =====")
+    print(response.text[:10000])
+    print("===== DOLLAR DEBUG END =====")
     return extract_current_price(
         response.text,
         symbol
