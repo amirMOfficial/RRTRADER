@@ -157,16 +157,14 @@ def format_price(value):
 # =========================
 # TGJU PRICE EXTRACTION
 # =========================
-
 def extract_current_price(html, symbol):
     """
-    Extract the current price from TGJU HTML.
+    Extract current price from TGJU page.
 
-    The visible TGJU page contains:
-        نرخ فعلی:: PRICE
-
-    We first convert the HTML to plain text,
-    then search around the 'نرخ فعلی' label.
+    TGJU pages expose the current price in several
+    slightly different HTML structures. We use
+    multiple extraction methods so one page structure
+    does not break the whole job.
     """
 
     soup = BeautifulSoup(
@@ -174,11 +172,16 @@ def extract_current_price(html, symbol):
         "html.parser"
     )
 
-    # Remove elements that can contain unrelated numbers
+    # Remove scripts/styles
     for element in soup(
         ["script", "style", "noscript"]
     ):
         element.decompose()
+
+    # -------------------------------------------------
+    # METHOD 1
+    # Search visible text around "نرخ فعلی"
+    # -------------------------------------------------
 
     text = soup.get_text(
         " ",
@@ -187,7 +190,13 @@ def extract_current_price(html, symbol):
 
     text = normalize_digits(text)
 
-    # Normalize whitespace
+    text = (
+        text
+        .replace("\u200c", " ")
+        .replace("\xa0", " ")
+        .replace("٬", ",")
+    )
+
     text = re.sub(
         r"\s+",
         " ",
@@ -199,80 +208,188 @@ def extract_current_price(html, symbol):
         symbol
     )
 
-    # Main pattern
     patterns = [
-        r"نرخ\s*فعلی\s*[:：]+\s*([0-9][0-9,٬]*)",
-        r"نرخ\s*فعلی\s*[:：]?\s*([0-9][0-9,٬]*)",
+
+        # نرخ فعلی:: 1,880,200
+        r"نرخ\s*فعلی\s*[:：]+\s*([0-9][0-9,]*)",
+
+        # نرخ فعلی : 1,880,200
+        r"نرخ\s*فعلی\s*[:：]?\s*([0-9][0-9,]*)",
+
+        # نرخ فعلی ... 1,880,200
+        r"نرخ\s*فعلی.{0,80}?([0-9][0-9,]{3,})",
+
     ]
 
     for pattern in patterns:
 
         match = re.search(
             pattern,
-            text
+            text,
+            re.DOTALL
         )
 
         if match:
 
             raw_price = match.group(1)
 
-            logger.info(
-                "Found %s price: %s Rial",
-                symbol,
-                raw_price
-            )
+            try:
 
-            return clean_number(
-                raw_price
-            )
+                price = clean_number(
+                    raw_price
+                )
 
-    # Fallback:
-    # Find "نرخ فعلی" and inspect nearby text.
-    index = text.find("نرخ فعلی")
+                logger.info(
+                    "Found %s price: %s Rial",
+                    symbol,
+                    raw_price
+                )
 
-    if index != -1:
+                return price
 
-        nearby = text[
-            index:index + 150
-        ]
+            except ValueError:
+                pass
 
-        logger.info(
-            "TGJU fallback text for %s: %s",
-            symbol,
-            nearby
+    # -------------------------------------------------
+    # METHOD 2
+    # Search HTML itself
+    # -------------------------------------------------
+
+    html_normalized = normalize_digits(
+        html
+    )
+
+    html_normalized = (
+        html_normalized
+        .replace("٬", ",")
+        .replace("\u200c", " ")
+        .replace("\xa0", " ")
+    )
+
+    html_normalized = re.sub(
+        r"\s+",
+        " ",
+        html_normalized
+    )
+
+    html_patterns = [
+
+        r"نرخ\s*فعلی.{0,500}?([0-9][0-9,]{3,})",
+
+        r"نرخ\s*فعلی\s*[:：].{0,100}?([0-9][0-9,]{3,})",
+
+    ]
+
+    for pattern in html_patterns:
+
+        match = re.search(
+            pattern,
+            html_normalized,
+            re.DOTALL
+        )
+
+        if match:
+
+            raw_price = match.group(1)
+
+            try:
+
+                price = clean_number(
+                    raw_price
+                )
+
+                logger.info(
+                    "Found %s price using HTML fallback: %s Rial",
+                    symbol,
+                    raw_price
+                )
+
+                return price
+
+            except ValueError:
+                pass
+
+    # -------------------------------------------------
+    # METHOD 3
+    # Look for a table/property containing
+    # "نرخ فعلی"
+    # -------------------------------------------------
+
+    for element in soup.find_all(
+        string=re.compile(
+            r"نرخ\s*فعلی",
+            re.IGNORECASE
+        )
+    ):
+
+        parent = element.parent
+
+        if not parent:
+            continue
+
+        nearby_text = parent.parent.get_text(
+            " ",
+            strip=True
+        )
+
+        nearby_text = normalize_digits(
+            nearby_text
+        )
+
+        nearby_text = nearby_text.replace(
+            "٬",
+            ","
         )
 
         numbers = re.findall(
-            r"\d[\d,٬]*",
-            nearby
+            r"\d[\d,]{3,}",
+            nearby_text
         )
 
         for number in numbers:
 
             try:
+
                 price = clean_number(
                     number
                 )
 
-                if price > 0:
+                logger.info(
+                    "Found %s price using DOM fallback: %s Rial",
+                    symbol,
+                    number
+                )
 
-                    logger.info(
-                        "Fallback price for %s: %s Rial",
-                        symbol,
-                        price
-                    )
-
-                    return price
+                return price
 
             except ValueError:
                 continue
 
+    # -------------------------------------------------
+    # DEBUG
+    # -------------------------------------------------
+
+    logger.error(
+        "Could not extract price for %s",
+        symbol
+    )
+
+    # Print useful nearby text to GitHub Actions
+    index = text.find(
+        "نرخ فعلی"
+    )
+
+    if index != -1:
+
+        logger.error(
+            "TGJU text around price: %s",
+            text[index:index + 300]
+        )
+
     raise RuntimeError(
         f"Could not find current price "
         f"for TGJU symbol: {symbol}"
-    )
-
-
+                )
 # =========================
 # FETCH TGJU
 # =========================
