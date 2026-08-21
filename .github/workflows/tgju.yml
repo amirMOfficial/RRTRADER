@@ -9,9 +9,11 @@ on:
 
 jobs:
   send-tgju-report:
+
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -28,6 +30,6 @@ jobs:
       - name: Send TGJU report
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID1 }}
+          TELEGRAM_CHAT_ID1: ${{ secrets.TELEGRAM_CHAT_ID1 }}
         run: |
           python tgju.py
