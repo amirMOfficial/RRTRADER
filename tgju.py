@@ -540,8 +540,9 @@ def build_message(prices):
         f"🥈 نقره: "
         f"<b>{format_price(prices['silver'])} تومان</b>\n"
         "\n"
-        "🕐 <b>زمان گزارش:</b> ۱۱:۳۰ به وقت تهران\n"
-        "📌 <b>منبع:</b> TGJU"
+        f"📅 <b>تاریخ:</b> {persian_date}\n"
+        '🔗 <b>خرید و فروش آنلاین:</b> '
+        '<a href="https://bitpin.ir/signup/?ref=oDdSXxtY">bitpin</a>'
     )
 
 
