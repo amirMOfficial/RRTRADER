@@ -7,7 +7,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
-TGJU_PROFILE_URL = "https://www.tgju.org/profile"
+TGJU_URL = "https://www.tgju.org/profile"
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID1")
@@ -37,11 +37,11 @@ session.headers.update({
 
 
 MARKETS = {
-    "coin": "sekee",
-    "gold18": "geram18",
-    "usd": "price_dollar_rl",
-    "eur": "price_eur",
-    "silver": "silver_999",
+    "coin": ("sekee", "سکه امامی"),
+    "gold18": ("geram18", "طلا ۱۸ عیار"),
+    "usd": ("price_dollar_rl", "دلار"),
+    "eur": ("price_eur", "یورو"),
+    "silver": ("silver_999", "نقره"),
 }
 
 
@@ -50,12 +50,10 @@ def normalize_digits(value):
         "۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩",
         "01234567890123456789"
     )
-
     return str(value).translate(table)
 
 
-def clean_number(value):
-
+def number_from_text(value):
     value = normalize_digits(value)
 
     value = (
@@ -67,15 +65,15 @@ def clean_number(value):
         .replace("\xa0", "")
     )
 
-    value = re.sub(r"[^\d.]", "", value)
+    value = re.sub(r"[^\d]", "", value)
 
     if not value:
-        raise ValueError("Empty number")
+        return None
 
     number = Decimal(value)
 
     if number <= 0:
-        raise ValueError("Invalid price")
+        return None
 
     return number
 
@@ -85,12 +83,16 @@ def rial_to_toman(value):
 
 
 def format_price(value):
-    return f"{Decimal(value):,.0f}"
+    return f"{value:,.0f}"
 
 
-def get_page(url):
+def get_page(symbol):
+    url = f"{TGJU_URL}/{symbol}/today"
 
-    logger.info("Fetching TGJU: %s", url)
+    logger.info(
+        "Fetching TGJU: %s",
+        url
+    )
 
     response = session.get(
         url,
@@ -109,10 +111,10 @@ def extract_price(html, symbol):
         "html.parser"
     )
 
-    for item in soup.find_all(
+    for tag in soup.find_all(
         ["script", "style", "noscript"]
     ):
-        item.decompose()
+        tag.decompose()
 
     text = soup.get_text(
         " ",
@@ -154,11 +156,11 @@ def extract_price(html, symbol):
 
         if match:
 
-            try:
+            price = number_from_text(
+                match.group(1)
+            )
 
-                price = clean_number(
-                    match.group(1)
-                )
+            if price:
 
                 logger.info(
                     "Found %s price: %s Rial",
@@ -168,44 +170,41 @@ def extract_price(html, symbol):
 
                 return price
 
-            except Exception:
-                pass
-
     for element in soup.find_all(
         string=re.compile("نرخ")
     ):
 
-        nearby = element.parent
+        parent = element.parent
 
-        if nearby is None:
+        if parent is None:
             continue
 
-        container = nearby.parent
+        container = parent.parent
 
         if container is None:
-            container = nearby
+            container = parent
 
-        nearby_text = container.get_text(
+        nearby = container.get_text(
             " ",
             strip=True
         )
 
-        nearby_text = normalize_digits(
-            nearby_text
+        nearby = normalize_digits(
+            nearby
         )
 
         numbers = re.findall(
             r"\d[\d,]{3,}",
-            nearby_text
+            nearby
         )
 
-        for number in numbers:
+        for item in numbers:
 
-            try:
+            price = number_from_text(
+                item
+            )
 
-                price = clean_number(
-                    number
-                )
+            if price:
 
                 logger.info(
                     "Found %s price using DOM: %s Rial",
@@ -215,22 +214,14 @@ def extract_price(html, symbol):
 
                 return price
 
-            except Exception:
-                pass
-
     raise RuntimeError(
         f"Could not find current price for {symbol}"
     )
 
 
-def get_profile_price(symbol):
+def get_price(symbol):
 
-    url = (
-        f"{TGJU_PROFILE_URL}/"
-        f"{symbol}/today"
-    )
-
-    html = get_page(url)
+    html = get_page(symbol)
 
     return extract_price(
         html,
@@ -238,217 +229,28 @@ def get_profile_price(symbol):
     )
 
 
-def get_currency_price(symbol):
-
-    url = (
-        f"{TGJU_PROFILE_URL}/"
-        f"{symbol}/today"
-    )
-
-    html = get_page(url)
-
-    soup = BeautifulSoup(
-        html,
-        "html.parser"
-    )
-
-    for item in soup.find_all(
-        ["script", "style", "noscript"]
-    ):
-        item.decompose()
-
-    text = soup.get_text(
-        " ",
-        strip=True
-    )
-
-    text = normalize_digits(text)
-
-    text = (
-        text
-        .replace("٬", ",")
-        .replace("\u200c", " ")
-        .replace("\xa0", " ")
-    )
-
-    text = re.sub(
-        r"\s+",
-        " ",
-        text
-    )
-
-    logger.info(
-        "Searching currency price for %s",
-        symbol
-    )
-
-    # First try نرخ فعلی
-    patterns = [
-        r"نرخ\s*فعلی\s*[:：]+\s*([0-9][0-9,]*)",
-        r"نرخ\s*فعلی\s*[:：]?\s*([0-9][0-9,]*)",
-    ]
-
-    for pattern in patterns:
-
-        match = re.search(
-            pattern,
-            text
-        )
-
-        if match:
-
-            try:
-
-                price = clean_number(
-                    match.group(1)
-                )
-
-                logger.info(
-                    "Found %s price: %s Rial",
-                    symbol,
-                    format_price(price)
-                )
-
-                return price
-
-            except Exception:
-                pass
-
-    # Then search HTML
-    html_text = normalize_digits(html)
-
-    html_text = (
-        html_text
-        .replace("٬", ",")
-        .replace("\u200c", " ")
-        .replace("\xa0", " ")
-    )
-
-    patterns = [
-        r"نرخ\s*فعلی.{0,300}?([0-9][0-9,]{3,})",
-        r"price.{0,300}?([0-9][0-9,]{3,})",
-    ]
-
-    for pattern in patterns:
-
-        match = re.search(
-            pattern,
-            html_text,
-            flags=re.IGNORECASE
-        )
-
-        if match:
-
-            try:
-
-                price = clean_number(
-                    match.group(1)
-                )
-
-                logger.info(
-                    "Found %s price using HTML: %s Rial",
-                    symbol,
-                    format_price(price)
-                )
-
-                return price
-
-            except Exception:
-                pass
-
-    raise RuntimeError(
-        f"Could not find currency price for {symbol}"
-    )
-
-
 def fetch_all_prices():
 
     prices = {}
 
-    # -------------------------
-    # Coin
-    # -------------------------
+    for key, data in MARKETS.items():
 
-    value = get_profile_price(
-        MARKETS["coin"]
-    )
+        symbol = data[0]
+        name = data[1]
 
-    prices["coin"] = rial_to_toman(
-        value
-    )
+        rial = get_price(symbol)
 
-    logger.info(
-        "سکه امامی = %s تومان",
-        format_price(prices["coin"])
-    )
+        toman = rial_to_toman(
+            rial
+        )
 
-    # -------------------------
-    # Gold 18
-    # -------------------------
+        prices[key] = toman
 
-    value = get_profile_price(
-        MARKETS["gold18"]
-    )
-
-    prices["gold18"] = rial_to_toman(
-        value
-    )
-
-    logger.info(
-        "طلا ۱۸ عیار = %s تومان",
-        format_price(prices["gold18"])
-    )
-
-    # -------------------------
-    # Dollar
-    # -------------------------
-
-    value = get_currency_price(
-        MARKETS["usd"]
-    )
-
-    prices["usd"] = rial_to_toman(
-        value
-    )
-
-    logger.info(
-        "دلار = %s تومان",
-        format_price(prices["usd"])
-    )
-
-    # -------------------------
-    # Euro
-    # -------------------------
-
-    value = get_currency_price(
-        MARKETS["eur"]
-    )
-
-    prices["eur"] = rial_to_toman(
-        value
-    )
-
-    logger.info(
-        "یورو = %s تومان",
-        format_price(prices["eur"])
-    )
-
-    # -------------------------
-    # Silver
-    # -------------------------
-
-    value = get_profile_price(
-        MARKETS["silver"]
-    )
-
-    prices["silver"] = rial_to_toman(
-        value
-    )
-
-    logger.info(
-        "نقره = %s تومان",
-        format_price(prices["silver"])
-    )
+        logger.info(
+            "%s = %s تومان",
+            name,
+            format_price(toman)
+        )
 
     return prices
 
@@ -513,5 +315,54 @@ def send_telegram(message):
     result = response.json()
 
     if not result.get("ok"):
+
         raise RuntimeError(
-            f"Telegram error: {result
+            "Telegram API error: "
+            + str(result)
+        )
+
+    logger.info(
+        "TGJU Telegram message sent successfully."
+    )
+
+
+def main():
+
+    logger.info(
+        "Starting TGJU market job..."
+    )
+
+    prices = fetch_all_prices()
+
+    message = build_message(
+        prices
+    )
+
+    logger.info(
+        "Generated TGJU message:\n%s",
+        message
+    )
+
+    send_telegram(
+        message
+    )
+
+    logger.info(
+        "TGJU job completed successfully."
+    )
+
+
+if __name__ == "__main__":
+
+    try:
+
+        main()
+
+    except Exception as error:
+
+        logger.exception(
+            "TGJU JOB FAILED: %s",
+            error
+        )
+
+        raise
