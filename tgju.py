@@ -65,7 +65,7 @@ TGJU_MARKETS = {
     },
 
     "gold18": {
-        "symbol": "tgju_gold_irg18",
+        "symbol": "geram18",
         "name": "طلا ۱۸ عیار",
     },
 
