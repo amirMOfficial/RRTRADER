@@ -1,1 +1,35 @@
+name: TGJU Telegram Report
 
+on:
+  schedule:
+    # 11:30 Tehran = 08:00 UTC
+    - cron: "0 8 * * *"
+
+  workflow_dispatch:
+
+jobs:
+  send-tgju-report:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Send TGJU report
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID1 }}
+        run: |
+          python tgju.py
