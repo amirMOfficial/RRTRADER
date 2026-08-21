@@ -540,7 +540,9 @@ def build_message(prices):
 
     return (
         "💱 <b>قیمت های رسمی بازار</b>" 
-        f"📅 <b>تاریخ:</b> {persian_date}\n"
+        f" 📅 <b></b> {persian_date}\n"
+        "\n"
+        "------------"
         "\n"
         f"🪙 سکه امامی: "
         f"<b>{format_price(prices['coin'])} تومان</b>\n"
@@ -557,7 +559,8 @@ def build_message(prices):
         f"🥈 نقره: "
         f"<b>{format_price(prices['silver'])} تومان</b>\n"
         "\n"
-        
+        "------------"
+        "\n"
         '🔗 <b>خرید و فروش آنلاین:</b> '
         '<a href="https://bitpin.ir/signup/?refcode=u9skcziwl8">bitpin</a>'
     )
