@@ -1,12 +1,13 @@
 import os
 import re
 import logging
-from datetime import datetime
-import jdatetime
 from decimal import Decimal
+from datetime import datetime
 
+import jdatetime
 import requests
 from bs4 import BeautifulSoup
+from zoneinfo import ZoneInfo
 
 
 # =========================================================
@@ -19,6 +20,9 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID1")
 
 TIMEOUT = 30
+
+# Timezone تهران
+TEHRAN_TZ = ZoneInfo("Asia/Tehran")
 
 
 # =========================================================
@@ -179,9 +183,8 @@ def fetch_url(url):
 
 def fetch_symbol_page(symbol):
     """
-    مهم:
-    برای قیمت اصلی از صفحه /profile/SYMBOL استفاده می‌کنیم.
-    بعضی endpoint های /today در GitHub Actions ممکن است 0 bytes برگردانند.
+    ابتدا صفحه اصلی نماد را دریافت می‌کنیم.
+    در صورت ناموفق بودن، /today نیز امتحان می‌شود.
     """
 
     urls = [
@@ -242,7 +245,6 @@ def extract_price(html, symbol):
     )
 
     # -----------------------------------------------------
-    # روش 1
     # نرخ فعلی
     # -----------------------------------------------------
 
@@ -284,7 +286,7 @@ def extract_price(html, symbol):
     )
 
     # -----------------------------------------------------
-    # روش 2: متن صفحه
+    # متن صفحه
     # -----------------------------------------------------
 
     clean_soup = BeautifulSoup(
@@ -340,7 +342,7 @@ def extract_price(html, symbol):
                 return price
 
     # -----------------------------------------------------
-    # روش 3: جدول / DOM
+    # جدول / DOM
     # -----------------------------------------------------
 
     for element in soup.find_all(
@@ -379,7 +381,7 @@ def extract_price(html, symbol):
                 return price
 
     # -----------------------------------------------------
-    # روش 4: data attributes
+    # data attributes
     # -----------------------------------------------------
 
     attributes = [
@@ -413,7 +415,7 @@ def extract_price(html, symbol):
                 return price
 
     # -----------------------------------------------------
-    # روش 5: JavaScript
+    # JavaScript
     # -----------------------------------------------------
 
     javascript_patterns = [
@@ -522,6 +524,20 @@ def fetch_all_prices():
 
 def build_message(prices):
 
+    # زمان فعلی در تهران
+    tehran_now = datetime.now(
+        TEHRAN_TZ
+    )
+
+    # تبدیل به تاریخ شمسی
+    jalali_now = jdatetime.datetime.fromgregorian(
+        datetime=tehran_now
+    )
+
+    persian_date = jalali_now.strftime(
+        "%Y/%m/%d"
+    )
+
     return (
         "💱 <b>قیمت‌های اصلی بازار</b>\n"
         "\n"
@@ -541,8 +557,8 @@ def build_message(prices):
         f"<b>{format_price(prices['silver'])} تومان</b>\n"
         "\n"
         f"📅 <b>تاریخ:</b> {persian_date}\n"
-        '🔗 <b>خرید و فروش آنلاین:</b> '
-        '<a href="https://bitpin.ir/signup/?ref=oDdSXxtY">bitpin</a>'
+        '🔗 <b>منبع:</b> '
+        '<a href="https://www.tgju.org/">TGJU</a>'
     )
 
 
@@ -627,6 +643,7 @@ def main():
 if __name__ == "__main__":
 
     try:
+
         main()
 
     except Exception as error:
