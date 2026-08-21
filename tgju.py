@@ -539,7 +539,7 @@ def build_message(prices):
     )
 
     return (
-        "💱 <b>قیمت‌های اصلی بازار</b>\n"
+        "💱 <b>قیمت های رسمی بازار</b>\n"
         "\n"
         f"🪙 سکه امامی: "
         f"<b>{format_price(prices['coin'])} تومان</b>\n"
@@ -557,8 +557,8 @@ def build_message(prices):
         f"<b>{format_price(prices['silver'])} تومان</b>\n"
         "\n"
         f"📅 <b>تاریخ:</b> {persian_date}\n"
-        '🔗 <b>منبع:</b> '
-        '<a href="https://www.tgju.org/">TGJU</a>'
+        '🔗 <b>خرید و فروش آنلاین:</b> '
+        '<a href="https://bitpin.ir/signup/?refcode=u9skcziwl8">bitpin</a>'
     )
 
 
