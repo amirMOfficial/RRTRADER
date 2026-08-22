@@ -761,7 +761,7 @@ def build_message(
     # -----------------------------------------------------
 
     return (
-        "💱 <b>قیمت های رسمی بازار</b>"
+        "💱 <b>نرخ رسمی بازار ارز</b>"
         f" 📅 <b></b> {persian_date}\n"
         "\n"
         "------------"
@@ -790,8 +790,7 @@ def build_message(
         "\n"
         '🔗 <b>خرید و فروش آنلاین:</b> '
         '<a href="https://bitpin.ir/signup/?refcode=u9skcziwl8">bitpin</a>\n'
-        '🌐 <b>منبع قیمت:</b> '
-        '<a href="https://www.tgju.org/">TGJU</a>'
+        
     )
 
 
