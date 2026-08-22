@@ -2,17 +2,25 @@ name: TGJU Telegram Report
 
 on:
   schedule:
+    # 11:30 Tehran = 08:00 UTC
     - cron: "0 8 * * *"
 
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  tgju-report:
+  send-tgju-report:
+
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+
+      - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -24,9 +32,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests beautifulsoup4 jdatetime
 
-      - name: Run TGJU report
+      - name: Send TGJU report
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID1: ${{ secrets.TELEGRAM_CHAT_ID1 }}
         run: |
           python tgju.py
+
+      - name: Save latest prices
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add data/last_prices.json
+
+          if git diff --cached --quiet; then
+            echo "No price changes to commit."
+          else
+            git commit -m "Update latest TGJU prices"
+            git push
+          fi
