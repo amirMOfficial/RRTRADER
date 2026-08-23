@@ -5,11 +5,11 @@ import logging
 from decimal import Decimal
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import jdatetime
 import requests
 from bs4 import BeautifulSoup
-from zoneinfo import ZoneInfo
 
 
 # =========================================================
@@ -23,10 +23,12 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID1")
 
 TIMEOUT = 30
 
-# Timezone تهران
 TEHRAN_TZ = ZoneInfo("Asia/Tehran")
 
-# محل ذخیره آخرین قیمت‌ها
+# درصد لازم برای ارسال مجدد
+CHANGE_THRESHOLD = Decimal("2")
+
+# فایل وضعیت
 DATA_DIR = Path("data")
 PRICE_FILE = DATA_DIR / "last_prices.json"
 
@@ -152,21 +154,55 @@ def format_price(value):
 
 
 # =========================================================
-# PRICE HISTORY
+# DATE / TIME
 # =========================================================
 
-def load_previous_prices():
+def get_tehran_now():
+    return datetime.now(TEHRAN_TZ)
+
+
+def get_persian_date():
+    now = get_tehran_now()
+
+    jalali = jdatetime.datetime.fromgregorian(
+        datetime=now
+    )
+
+    return jalali.strftime("%Y/%m/%d")
+
+
+def is_daily_report_time():
     """
-    آخرین قیمت ذخیره‌شده را از فایل JSON می‌خواند.
+    گزارش اجباری روزانه در ساعت 11:30 تهران.
+    """
+
+    now = get_tehran_now()
+
+    return (
+        now.hour == 11
+        and now.minute == 30
+    )
+
+
+# =========================================================
+# PRICE STATE
+# =========================================================
+
+def load_price_state():
+    """
+    وضعیت آخرین پیام ارسال‌شده را می‌خواند.
     """
 
     if not PRICE_FILE.exists():
+
         logger.info(
-            "No previous price file found. First run."
+            "No previous price state found."
         )
+
         return None
 
     try:
+
         with PRICE_FILE.open(
             "r",
             encoding="utf-8",
@@ -175,21 +211,15 @@ def load_previous_prices():
             data = json.load(file)
 
         if not isinstance(data, dict):
-            logger.warning(
-                "Previous price file has invalid format."
-            )
             return None
 
         prices = data.get("prices")
 
         if not isinstance(prices, dict):
-            logger.warning(
-                "Previous price file does not contain prices."
-            )
             return None
 
         logger.info(
-            "Previous prices loaded successfully."
+            "Previous sent prices loaded."
         )
 
         return data
@@ -197,19 +227,16 @@ def load_previous_prices():
     except Exception as error:
 
         logger.warning(
-            "Could not load previous prices: %s",
+            "Could not load price state: %s",
             error,
         )
 
         return None
 
 
-def save_current_prices(prices):
+def save_price_state(prices):
     """
-    قیمت‌های فعلی را در data/last_prices.json ذخیره می‌کند.
-
-    این تابع فقط بعد از ارسال موفق تلگرام
-    از main صدا زده می‌شود.
+    فقط قیمت‌های آخرین پیام ارسال‌شده ذخیره می‌شوند.
     """
 
     DATA_DIR.mkdir(
@@ -217,15 +244,11 @@ def save_current_prices(prices):
         exist_ok=True,
     )
 
-    tehran_now = datetime.now(
-        TEHRAN_TZ
-    )
+    now = get_tehran_now()
 
     data = {
-        "date": tehran_now.strftime(
-            "%Y-%m-%d"
-        ),
-        "updated_at": tehran_now.isoformat(),
+        "date": now.strftime("%Y-%m-%d"),
+        "updated_at": now.isoformat(),
         "prices": {
             key: str(value)
             for key, value in prices.items()
@@ -255,7 +278,7 @@ def save_current_prices(prices):
         )
 
         logger.info(
-            "Current prices saved to %s",
+            "Price state saved: %s",
             PRICE_FILE,
         )
 
@@ -275,12 +298,6 @@ def calculate_percentage_change(
     current_price,
     previous_price,
 ):
-    """
-    محاسبه درصد تغییر:
-
-    ((قیمت جدید - قیمت قبلی) / قیمت قبلی) * 100
-    """
-
     if previous_price is None:
         return None
 
@@ -308,9 +325,6 @@ def calculate_percentage_change(
 
 
 def format_change(change):
-    """
-    فرمت درصد تغییر برای پیام تلگرام.
-    """
 
     if change is None:
         return "➖ جدید"
@@ -319,7 +333,6 @@ def format_change(change):
         str(change)
     )
 
-    # تغییر بسیار کم / بدون تغییر
     if abs(change) < Decimal("0.005"):
         return "➖ 0.00%"
 
@@ -327,6 +340,61 @@ def format_change(change):
         return f"🔺 +{change:.2f}%"
 
     return f"🔻 {change:.2f}%"
+
+
+# =========================================================
+# CHECK 2% CHANGE
+# =========================================================
+
+def has_significant_change(
+    current_prices,
+    previous_data,
+):
+    """
+    بررسی می‌کند آیا حداقل یکی از ۵ قیمت
+    بیشتر از ۲ درصد نسبت به آخرین پیام تغییر کرده است.
+    """
+
+    if not previous_data:
+        return False
+
+    previous_prices = previous_data.get(
+        "prices",
+        {}
+    )
+
+    for market in MARKETS:
+
+        key = market["key"]
+
+        current = current_prices.get(key)
+        previous = previous_prices.get(key)
+
+        change = calculate_percentage_change(
+            current,
+            previous,
+        )
+
+        if change is None:
+            continue
+
+        logger.info(
+            "%s change = %.4f%%",
+            market["name"],
+            change,
+        )
+
+        if abs(change) >= CHANGE_THRESHOLD:
+
+            logger.info(
+                "SIGNIFICANT CHANGE FOUND: %s = %.4f%%",
+                market["name"],
+                change,
+            )
+
+            return True
+
+    return False
 
 
 # =========================================================
@@ -369,10 +437,6 @@ def fetch_url(url):
 
 
 def fetch_symbol_page(symbol):
-    """
-    ابتدا صفحه اصلی نماد دریافت می‌شود.
-    در صورت ناموفق بودن، /today نیز امتحان می‌شود.
-    """
 
     urls = [
         f"{TGJU_BASE_URL}/{symbol}",
@@ -418,10 +482,6 @@ def extract_price(html, symbol):
         symbol,
     )
 
-    # -----------------------------------------------------
-    # RAW HTML
-    # -----------------------------------------------------
-
     raw = normalize_digits(html)
 
     raw = (
@@ -431,15 +491,15 @@ def extract_price(html, symbol):
         .replace("\xa0", " ")
     )
 
-    # -----------------------------------------------------
-    # نرخ فعلی
-    # -----------------------------------------------------
-
     patterns = [
         r"نرخ\s*فعلی\s*[:：]+\s*([0-9][0-9,]*)",
         r"نرخ\s*فعلی\s*[:：]?\s*([0-9][0-9,]*)",
         r"نرخ\s*فعلی.{0,120}?([0-9][0-9,]{4,})",
     ]
+
+    # -----------------------------------------------------
+    # RAW HTML
+    # -----------------------------------------------------
 
     for pattern in patterns:
 
@@ -525,7 +585,7 @@ def extract_price(html, symbol):
                 return price
 
     # -----------------------------------------------------
-    # جدول / DOM
+    # DOM
     # -----------------------------------------------------
 
     for element in soup.find_all(
@@ -564,7 +624,7 @@ def extract_price(html, symbol):
                 return price
 
     # -----------------------------------------------------
-    # data attributes
+    # DATA ATTRIBUTES
     # -----------------------------------------------------
 
     attributes = [
@@ -598,7 +658,7 @@ def extract_price(html, symbol):
                 return price
 
     # -----------------------------------------------------
-    # JavaScript
+    # JAVASCRIPT
     # -----------------------------------------------------
 
     javascript_patterns = [
@@ -631,11 +691,6 @@ def extract_price(html, symbol):
                 )
 
                 return price
-
-    logger.error(
-        "Price extraction failed for %s",
-        symbol,
-    )
 
     raise RuntimeError(
         f"Could not find current price for TGJU symbol: {symbol}"
@@ -706,29 +761,7 @@ def build_message(
     previous_data,
 ):
 
-    # -----------------------------------------------------
-    # زمان تهران
-    # -----------------------------------------------------
-
-    tehran_now = datetime.now(
-        TEHRAN_TZ
-    )
-
-    # -----------------------------------------------------
-    # تاریخ شمسی
-    # -----------------------------------------------------
-
-    jalali_now = jdatetime.datetime.fromgregorian(
-        datetime=tehran_now
-    )
-
-    persian_date = jalali_now.strftime(
-        "%Y/%m/%d"
-    )
-
-    # -----------------------------------------------------
-    # قیمت‌های قبلی
-    # -----------------------------------------------------
+    persian_date = get_persian_date()
 
     previous_prices = {}
 
@@ -738,10 +771,6 @@ def build_message(
             "prices",
             {}
         )
-
-    # -----------------------------------------------------
-    # درصد تغییرات
-    # -----------------------------------------------------
 
     changes = {}
 
@@ -756,15 +785,11 @@ def build_message(
             previous_price,
         )
 
-    # -----------------------------------------------------
-    # MESSAGE
-    # -----------------------------------------------------
-
     return (
-        "💱 <b>نرخ رسمی بازار ارز</b>"
-        f" 📅 <b></b> {persian_date}\n"
+        "💱 <b>قیمت های رسمی بازار</b>\n"
+        f"📅 <b>تاریخ:</b> {persian_date}\n"
         "\n"
-        "------------"
+        "------------\n"
         "\n"
         f"🪙 سکه امامی: "
         f"<b>{format_price(prices['coin'])} تومان</b> "
@@ -786,11 +811,12 @@ def build_message(
         f"<b>{format_price(prices['silver'])} تومان</b> "
         f"{format_change(changes['silver'])}\n"
         "\n"
-        "------------"
+        "------------\n"
         "\n"
         '🔗 <b>خرید و فروش آنلاین:</b> '
         '<a href="https://bitpin.ir/signup/?refcode=u9skcziwl8">bitpin</a>\n'
-        
+        '🌐 <b>منبع قیمت:</b> '
+        '<a href="https://www.tgju.org/">TGJU</a>'
     )
 
 
@@ -845,7 +871,7 @@ def send_telegram(message):
 
 
 # =========================================================
-# MAIN
+# MAIN LOGIC
 # =========================================================
 
 def main():
@@ -855,66 +881,99 @@ def main():
     )
 
     # -----------------------------------------------------
-    # 1. قیمت قبلی را بخوان
+    # زمان فعلی تهران
     # -----------------------------------------------------
 
-    previous_data = load_previous_prices()
+    tehran_now = get_tehran_now()
+
+    logger.info(
+        "Tehran time: %s",
+        tehran_now.strftime(
+            "%Y-%m-%d %H:%M:%S"
+        ),
+    )
 
     # -----------------------------------------------------
-    # 2. قیمت‌های جدید را دریافت کن
+    # آخرین پیام ارسال‌شده
+    # -----------------------------------------------------
+
+    previous_data = load_price_state()
+
+    # -----------------------------------------------------
+    # دریافت قیمت‌های جدید
     # -----------------------------------------------------
 
     prices = fetch_all_prices()
 
     # -----------------------------------------------------
-    # 3. پیام را با درصد تغییر بساز
+    # آیا الان زمان گزارش روزانه است؟
     # -----------------------------------------------------
 
-    message = build_message(
+    daily_report = is_daily_report_time()
+
+    # -----------------------------------------------------
+    # آیا تغییر بیشتر از ۲٪ داریم؟
+    # -----------------------------------------------------
+
+    significant_change = has_significant_change(
         prices,
         previous_data,
     )
 
     logger.info(
-        "TGJU report generated."
-    )
-
-    # -----------------------------------------------------
-    # 4. پیام را به تلگرام بفرست
-    # -----------------------------------------------------
-
-    send_telegram(
-        message
-    )
-
-    # -----------------------------------------------------
-    # 5. فقط بعد از ارسال موفق ذخیره کن
-    # -----------------------------------------------------
-
-    save_current_prices(
-        prices
+        "Daily report: %s",
+        daily_report,
     )
 
     logger.info(
-        "TGJU JOB COMPLETED SUCCESSFULLY."
+        "Significant change: %s",
+        significant_change,
     )
 
+    # -----------------------------------------------------
+    # تصمیم نهایی
+    # -----------------------------------------------------
 
-# =========================================================
-# ENTRY POINT
-# =========================================================
+    should_send = (
+        daily_report
+        or significant_change
+    )
 
-if __name__ == "__main__":
+    # -----------------------------------------------------
+    # اولین اجرای ربات
+    # -----------------------------------------------------
 
-    try:
+    if previous_data is None:
 
-        main()
+        if daily_report:
 
-    except Exception as error:
+            logger.info(
+                "First run at daily report time."
+            )
 
-        logger.exception(
-            "TGJU JOB FAILED: %s",
-            error,
-        )
+            should_send = True
 
-        raise
+        else:
+
+            logger.info(
+                "First run outside daily report time."
+            )
+
+            logger.info(
+                "Saving prices as initial baseline."
+            )
+
+            save_price_state(
+                prices
+            )
+
+            return
+
+    # -----------------------------------------------------
+    # هیچ تغییری بیش از ۲٪ نیست
+    # -----------------------------------------------------
+
+    if not should_send:
+
+        logger.info(
+            "No significa
