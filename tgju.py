@@ -345,7 +345,7 @@ def has_significant_change(
             return True
 
     def get_bitcoin_price():
-    logger.info(
+        logger.info(
         "Fetching Bitcoin price from CoinMarketCap..."
     )
 
