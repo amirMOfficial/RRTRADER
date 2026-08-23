@@ -20,7 +20,7 @@ TGJU_BASE_URL = "https://www.tgju.org/profile"
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID1")
-CMC_API_KEY = os.getenv("CMC_API_KEY")
+COINMARKETCAP_API_KEY = os.getenv("COINMARKETCAP_API_KEY")
 
 CMC_BTC_URL = (
     "https://pro-api.coinmarketcap.com/v3/"
