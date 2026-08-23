@@ -343,7 +343,7 @@ def has_significant_change(
             )
 
             return True
-        def get_bitcoin_price():
+    def get_bitcoin_price():
     logger.info("Fetching Bitcoin price from CoinMarketCap...")
 
     if not COINMARKETCAP_API_KEY:
