@@ -928,10 +928,11 @@ def fetch_all_prices():
         )
     prices["bitcoin"] = get_bitcoin_price()
         
-        logger.info(
+    logger.info(
             "بیت‌کوین = %s USD",
             format_price(prices["bitcoin"]),
         )
+
     return prices
 
 
