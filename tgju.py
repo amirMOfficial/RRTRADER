@@ -343,6 +343,28 @@ def has_significant_change(
             )
 
             return True
+        current = prices.get("bitcoin")
+        previous = previous_prices.get("bitcoin")
+
+        change = calculate_change(
+        current,
+        previous,
+        )
+
+        if change is not None:
+
+        logger.info(
+        "Bitcoin change: %.4f%%",
+        change,
+        )
+
+        if abs(change) >= CHANGE_THRESHOLD:
+
+        logger.info(
+            "2%% threshold reached: Bitcoin"
+        )
+
+        return True
 
     return False
 
