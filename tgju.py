@@ -343,7 +343,6 @@ def has_significant_change(
             )
 
             return True
-
     def get_bitcoin_price():
         logger.info(
         "Fetching Bitcoin price from CoinMarketCap..."
@@ -381,9 +380,37 @@ def has_significant_change(
 
         data = response.json()
 
+        # CoinMarketCap may return data as a list
+        # or as a dictionary depending on the API response.
+        market_data = data.get("data")
+
+        if isinstance(market_data, list):
+            if not market_data:
+                raise RuntimeError(
+                    "CoinMarketCap returned empty data"
+                )
+
+            bitcoin_data = market_data[0]
+
+        elif isinstance(market_data, dict):
+            bitcoin_data = (
+                market_data.get("1")
+                or market_data.get("BTC")
+            )
+
+            if not bitcoin_data:
+                raise RuntimeError(
+                    "Bitcoin data not found in CoinMarketCap response"
+                )
+
+        else:
+            raise RuntimeError(
+                "Invalid CoinMarketCap data format"
+            )
+
         price = Decimal(
             str(
-                data["data"]["1"]["quote"]["USD"]["price"]
+                bitcoin_data["quote"]["USD"]["price"]
             )
         )
 
@@ -400,6 +427,7 @@ def has_significant_change(
         return price
 
     except Exception as error:
+
         logger.error(
             "CoinMarketCap Bitcoin fetch failed: %s",
             error,
@@ -408,8 +436,7 @@ def has_significant_change(
         raise RuntimeError(
             "Could not fetch Bitcoin price from CoinMarketCap"
         ) from error
-    
-
+        
     return False
 
 
