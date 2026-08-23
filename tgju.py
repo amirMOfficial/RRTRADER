@@ -20,6 +20,12 @@ TGJU_BASE_URL = "https://www.tgju.org/profile"
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID1")
+CMC_API_KEY = os.getenv("CMC_API_KEY")
+
+CMC_BTC_URL = (
+    "https://pro-api.coinmarketcap.com/v3/"
+    "cryptocurrency/quotes/latest"
+)
 
 TIMEOUT = 30
 
@@ -650,7 +656,69 @@ def get_price(symbol):
 # =========================================================
 # ALL PRICES
 # =========================================================
+def get_bitcoin_price():
+    logger.info("Fetching Bitcoin price from CoinMarketCap...")
 
+    if not COINMARKETCAP_API_KEY:
+        raise RuntimeError(
+            "COINMARKETCAP_API_KEY is missing"
+        )
+
+    headers = {
+        "Accept": "application/json",
+        "X-CMC_PRO_API_KEY": COINMARKETCAP_API_KEY,
+    }
+
+    params = {
+        "id": "1",
+        "convert": "USD",
+    }
+
+    try:
+        response = session.get(
+            CMC_BTC_URL,
+            headers=headers,
+            params=params,
+            timeout=TIMEOUT,
+        )
+
+        logger.info(
+            "CoinMarketCap HTTP %s",
+            response.status_code,
+        )
+
+        response.raise_for_status()
+
+        data = response.json()
+
+        price = Decimal(
+            str(
+                data["data"]["1"]["quote"]["USD"]["price"]
+            )
+        )
+
+        if price <= 0:
+            raise RuntimeError(
+                "Invalid Bitcoin price from CoinMarketCap"
+            )
+
+        logger.info(
+            "Bitcoin = %s USD",
+            format_price(price),
+        )
+
+        return price
+
+    except Exception as error:
+        logger.error(
+            "CoinMarketCap Bitcoin fetch failed: %s",
+            error,
+        )
+
+        raise RuntimeError(
+            "Could not fetch Bitcoin price from CoinMarketCap"
+        ) from error
+        
 def fetch_all_prices():
 
     prices = {}
@@ -682,7 +750,12 @@ def fetch_all_prices():
             name,
             format_price(toman_price),
         )
+        prices["bitcoin"] = get_bitcoin_price()
 
+        logger.info(
+        "بیت‌کوین = %s USD",
+        format_price(prices["bitcoin"]),
+        )
     return prices
 
 
@@ -726,6 +799,10 @@ def build_message(
         f"🥇 طلا ۱۸ عیار: "
         f"<b>{format_price(prices['gold18'])} تومان</b> "
         f"{format_change(changes['gold18'])}\n"
+        "\n"
+        f"₿ بیت‌کوین: "
+        f"<b>{format_price(prices['bitcoin'])} دلار</b> "
+        f"{format_change(changes['bitcoin'])}\n"
         "\n"
         f"🇺🇸 دلار: "
         f"<b>{format_price(prices['usd'])} تومان</b> "
