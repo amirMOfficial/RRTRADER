@@ -2,7 +2,6 @@ name: TGJU Telegram Report
 
 on:
   schedule:
-    # Every 30 minutes
     - cron: "*/30 * * * *"
 
   workflow_dispatch:
@@ -11,13 +10,13 @@ permissions:
   contents: write
 
 jobs:
-  send-tgju-report:
+  tgju-report:
 
     runs-on: ubuntu-latest
 
     steps:
 
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -32,7 +31,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests beautifulsoup4 jdatetime
 
-      - name: Run TGJU
+      - name: Run TGJU report
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID1: ${{ secrets.TELEGRAM_CHAT_ID1 }}
@@ -46,10 +45,7 @@ jobs:
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
             git add data/last_prices.json
-
             git commit -m "Update TGJU price state"
-
             git push
           fi
