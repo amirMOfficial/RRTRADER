@@ -343,99 +343,7 @@ def has_significant_change(
             )
 
             return True
-    def get_bitcoin_price():
-        logger.info(
-        "Fetching Bitcoin price from CoinMarketCap..."
-    )
-
-    if not COINMARKETCAP_API_KEY:
-        raise RuntimeError(
-            "COINMARKETCAP_API_KEY is missing"
-        )
-
-    headers = {
-        "Accept": "application/json",
-        "X-CMC_PRO_API_KEY": COINMARKETCAP_API_KEY,
-    }
-
-    params = {
-        "id": "1",
-        "convert": "USD",
-    }
-
-    try:
-        response = session.get(
-            CMC_BTC_URL,
-            headers=headers,
-            params=params,
-            timeout=TIMEOUT,
-        )
-
-        logger.info(
-            "CoinMarketCap HTTP %s",
-            response.status_code,
-        )
-
-        response.raise_for_status()
-
-        data = response.json()
-
-        # CoinMarketCap may return data as a list
-        # or as a dictionary depending on the API response.
-        market_data = data.get("data")
-
-        if isinstance(market_data, list):
-            if not market_data:
-                raise RuntimeError(
-                    "CoinMarketCap returned empty data"
-                )
-
-            bitcoin_data = market_data[0]
-
-        elif isinstance(market_data, dict):
-            bitcoin_data = (
-                market_data.get("1")
-                or market_data.get("BTC")
-            )
-
-            if not bitcoin_data:
-                raise RuntimeError(
-                    "Bitcoin data not found in CoinMarketCap response"
-                )
-
-        else:
-            raise RuntimeError(
-                "Invalid CoinMarketCap data format"
-            )
-
-        price = Decimal(
-            str(
-                bitcoin_data["quote"]["USD"]["price"]
-            )
-        )
-
-        if price <= 0:
-            raise RuntimeError(
-                "Invalid Bitcoin price from CoinMarketCap"
-            )
-
-        logger.info(
-            "Bitcoin = %s USD",
-            format_price(price),
-        )
-
-        return price
-
-    except Exception as error:
-
-        logger.error(
-            "CoinMarketCap Bitcoin fetch failed: %s",
-            error,
-        )
-
-        raise RuntimeError(
-            "Could not fetch Bitcoin price from CoinMarketCap"
-        ) from error
+        
         
     return False
 
@@ -750,7 +658,9 @@ def get_price(symbol):
 # ALL PRICES
 # =========================================================
 def get_bitcoin_price():
-    logger.info("Fetching Bitcoin price from CoinMarketCap...")
+    logger.info(
+        "Fetching Bitcoin price from CoinMarketCap..."
+    )
 
     if not COINMARKETCAP_API_KEY:
         raise RuntimeError(
@@ -783,16 +693,43 @@ def get_bitcoin_price():
         response.raise_for_status()
 
         data = response.json()
+        market_data = data.get("data")
+
+        if isinstance(market_data, list):
+
+            if not market_data:
+                raise RuntimeError(
+                    "CoinMarketCap returned empty data"
+                )
+
+            bitcoin_data = market_data[0]
+
+        elif isinstance(market_data, dict):
+
+            bitcoin_data = (
+                market_data.get("1")
+                or market_data.get("BTC")
+            )
+
+            if not bitcoin_data:
+                raise RuntimeError(
+                    "Bitcoin data not found"
+                )
+
+        else:
+            raise RuntimeError(
+                "Invalid CoinMarketCap data format"
+            )
 
         price = Decimal(
             str(
-                data["data"]["1"]["quote"]["USD"]["price"]
+                bitcoin_data["quote"]["USD"]["price"]
             )
         )
 
         if price <= 0:
             raise RuntimeError(
-                "Invalid Bitcoin price from CoinMarketCap"
+                "Invalid Bitcoin price"
             )
 
         logger.info(
@@ -803,6 +740,7 @@ def get_bitcoin_price():
         return price
 
     except Exception as error:
+
         logger.error(
             "CoinMarketCap Bitcoin fetch failed: %s",
             error,
@@ -811,6 +749,8 @@ def get_bitcoin_price():
         raise RuntimeError(
             "Could not fetch Bitcoin price from CoinMarketCap"
         ) from error
+
+    
         
 def fetch_all_prices():
 
@@ -846,8 +786,8 @@ def fetch_all_prices():
         prices["bitcoin"] = get_bitcoin_price()
 
         logger.info(
-        "بیت‌کوین = %s USD",
-        format_price(prices["bitcoin"]),
+            "بیت‌کوین = %s USD",
+            format_price(prices["bitcoin"]),
         )
     return prices
 
