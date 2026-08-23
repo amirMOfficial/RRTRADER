@@ -489,7 +489,6 @@ def get_bitcoin_price():
         ) from error
         
         
-    return False
 
 
 # =========================================================
