@@ -341,10 +341,34 @@ def has_significant_change(
                 "2%% threshold reached: %s",
                 market["name"],
             )
+    # =====================================================
+    # BITCOIN
+    # =====================================================
+
+    current_btc = prices.get("bitcoin")
+    previous_btc = previous_prices.get("bitcoin")
+
+    btc_change = calculate_change(
+        current_btc,
+        previous_btc,
+    )
+
+    if btc_change is not None:
+
+        logger.info(
+            "بیت‌کوین change: %.4f%%",
+            btc_change,
+        )
+
+        if abs(btc_change) >= CHANGE_THRESHOLD:
+
+            logger.info(
+                "2%% threshold reached: بیت‌کوین"
+            )
 
             return True
-        
-        return False
+
+    return False
             
 
 # =========================================================
