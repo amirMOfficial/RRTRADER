@@ -715,8 +715,10 @@ def build_message(
     persian_date = get_persian_date()
 
     return (
-        "💱 <b>قیمت های اصلی بازار</b>\n"
+        "💱 <b> نرخ رسمی بازار ارز</b>"
+        f"📅 <b></b> {persian_date}\n"
         "\n"
+        "<b>——————————</b>"
         f"🪙 سکه امامی: "
         f"<b>{format_price(prices['coin'])} تومان</b> "
         f"{format_change(changes['coin'])}\n"
@@ -737,12 +739,11 @@ def build_message(
         f"<b>{format_price(prices['silver'])} تومان</b> "
         f"{format_change(changes['silver'])}\n"
         "\n"
-        f"📅 <b>تاریخ:</b> {persian_date}\n"
+        "<b>——————————</b>"
         "\n"
         '🔗 <b>خرید و فروش آنلاین:</b> '
         '<a href="https://bitpin.ir/signup/?ref=oDdSXxtY">bitpin</a>\n'
-        '🌐 <b>منبع:</b> '
-        '<a href="https://www.tgju.org/">TGJU</a>'
+        
     )
 
 
