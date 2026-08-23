@@ -927,7 +927,7 @@ def fetch_all_prices():
             name,
             format_price(toman_price),
         )
-        prices["bitcoin"] = get_bitcoin_price()
+    prices["bitcoin"] = get_bitcoin_price()
 
         logger.info(
             "بیت‌کوین = %s USD",
