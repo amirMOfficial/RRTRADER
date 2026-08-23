@@ -343,28 +343,68 @@ def has_significant_change(
             )
 
             return True
-        current = prices.get("bitcoin")
-        previous = previous_prices.get("bitcoin")
+        def get_bitcoin_price():
+    logger.info("Fetching Bitcoin price from CoinMarketCap...")
 
-        change = calculate_change(
-        current,
-        previous,
+    if not COINMARKETCAP_API_KEY:
+        raise RuntimeError(
+            "COINMARKETCAP_API_KEY is missing"
         )
 
-        if change is not None:
+    headers = {
+        "Accept": "application/json",
+        "X-CMC_PRO_API_KEY": COINMARKETCAP_API_KEY,
+    }
+
+    params = {
+        "id": "1",
+        "convert": "USD",
+    }
+
+    try:
+        response = session.get(
+            CMC_BTC_URL,
+            headers=headers,
+            params=params,
+            timeout=TIMEOUT,
+        )
 
         logger.info(
-        "Bitcoin change: %.4f%%",
-        change,
+            "CoinMarketCap HTTP %s",
+            response.status_code,
         )
 
-        if abs(change) >= CHANGE_THRESHOLD:
+        response.raise_for_status()
+
+        data = response.json()
+
+        price = Decimal(
+            str(
+                data["data"]["1"]["quote"]["USD"]["price"]
+            )
+        )
+
+        if price <= 0:
+            raise RuntimeError(
+                "Invalid Bitcoin price from CoinMarketCap"
+            )
 
         logger.info(
-            "2%% threshold reached: Bitcoin"
+            "Bitcoin = %s USD",
+            format_price(price),
         )
 
-        return True
+        return price
+
+    except Exception as error:
+        logger.error(
+            "CoinMarketCap Bitcoin fetch failed: %s",
+            error,
+        )
+
+        raise RuntimeError(
+            "Could not fetch Bitcoin price from CoinMarketCap"
+        ) from error
 
     return False
 
