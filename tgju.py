@@ -738,15 +738,14 @@ def get_bitcoin_price():
         # API ERROR
         # =================================================
 
-        status = data.get("status", {})
+        status = data.get("status")
 
         if isinstance(status, dict):
             error_code = status.get(
-                "error_code",
-                0,
+                "error_code"
             )
 
-            if error_code != 0:
+            if error_code is not None and error_code != 0:
                 error_message = status.get(
                     "error_message",
                     "Unknown CoinMarketCap error",
