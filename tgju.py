@@ -858,18 +858,32 @@ def get_price(symbol):
 # ALL PRICES
 # =========================================================
 def get_bitcoin_price():
+    """
+    دریافت قیمت بیت‌کوین از CoinMarketCap
+    خروجی: قیمت بیت‌کوین به دلار
+    """
+
     logger.info(
         "Fetching Bitcoin price from CoinMarketCap..."
     )
 
-    if not COINMARKETCAP_API_KEY:
+    api_key = os.getenv(
+        "COINMARKETCAP_API_KEY"
+    )
+
+    if not api_key:
         raise RuntimeError(
             "COINMARKETCAP_API_KEY is missing"
         )
 
+    url = (
+        "https://pro-api.coinmarketcap.com/"
+        "v3/cryptocurrency/quotes/latest"
+    )
+
     headers = {
         "Accept": "application/json",
-        "X-CMC_PRO_API_KEY": COINMARKETCAP_API_KEY,
+        "X-CMC_PRO_API_KEY": api_key,
     }
 
     params = {
@@ -878,8 +892,9 @@ def get_bitcoin_price():
     }
 
     try:
+
         response = session.get(
-            CMC_BTC_URL,
+            url,
             headers=headers,
             params=params,
             timeout=TIMEOUT,
@@ -893,47 +908,119 @@ def get_bitcoin_price():
         response.raise_for_status()
 
         data = response.json()
-        market_data = data.get("data")
 
-        if isinstance(market_data, list):
+        # ---------------------------------------------
+        # بررسی خطای API
+        # ---------------------------------------------
 
-            if not market_data:
-                raise RuntimeError(
-                    "CoinMarketCap returned empty data"
+        status = data.get(
+            "status",
+            {},
+        )
+
+        if status.get(
+            "error_code",
+            0,
+        ) != 0:
+
+            raise RuntimeError(
+                status.get(
+                    "error_message",
+                    "Unknown CoinMarketCap error",
                 )
-
-            bitcoin_data = market_data[0]
-
-        elif isinstance(market_data, dict):
-
-            bitcoin_data = (
-                market_data.get("1")
-                or market_data.get("BTC")
             )
 
-            if not bitcoin_data:
-                raise RuntimeError(
-                    "Bitcoin data not found"
-                )
+        # ---------------------------------------------
+        # data باید LIST باشد
+        # ---------------------------------------------
 
-        else:
+        bitcoin_list = data.get("data")
+
+        if not isinstance(
+            bitcoin_list,
+            list,
+        ):
+
             raise RuntimeError(
-                "Invalid CoinMarketCap data format"
+                "Unexpected CoinMarketCap data format"
+            )
+
+        if not bitcoin_list:
+
+            raise RuntimeError(
+                "CoinMarketCap returned empty Bitcoin data"
+            )
+
+        bitcoin_data = bitcoin_list[0]
+
+        # ---------------------------------------------
+        # quote در API جدید نیز LIST است
+        # ---------------------------------------------
+
+        quote_list = bitcoin_data.get(
+            "quote"
+        )
+
+        if not isinstance(
+            quote_list,
+            list,
+        ):
+
+            raise RuntimeError(
+                "Unexpected Bitcoin quote format"
+            )
+
+        if not quote_list:
+
+            raise RuntimeError(
+                "Bitcoin quote list is empty"
+            )
+
+        # پیدا کردن USD
+        usd_quote = None
+
+        for quote in quote_list:
+
+            if (
+                isinstance(quote, dict)
+                and quote.get("symbol") == "USD"
+            ):
+
+                usd_quote = quote
+                break
+
+        if usd_quote is None:
+
+            raise RuntimeError(
+                "USD quote not found for Bitcoin"
+            )
+
+        # ---------------------------------------------
+        # قیمت
+        # ---------------------------------------------
+
+        price = usd_quote.get(
+            "price"
+        )
+
+        if price is None:
+
+            raise RuntimeError(
+                "Bitcoin USD price is missing"
             )
 
         price = Decimal(
-            str(
-                bitcoin_data["quote"]["USD"]["price"]
-            )
+            str(price)
         )
 
         if price <= 0:
+
             raise RuntimeError(
                 "Invalid Bitcoin price"
             )
 
         logger.info(
-            "Bitcoin = %s USD",
+            "Bitcoin price = $%s",
             format_price(price),
         )
 
@@ -941,13 +1028,14 @@ def get_bitcoin_price():
 
     except Exception as error:
 
-        logger.error(
+        logger.exception(
             "CoinMarketCap Bitcoin fetch failed: %s",
             error,
         )
 
         raise RuntimeError(
-            "Could not fetch Bitcoin price from CoinMarketCap"
+            "Could not fetch Bitcoin price "
+            "from CoinMarketCap"
         ) from error
 
     
