@@ -343,8 +343,11 @@ def has_significant_change(
             )
 
             return True
+
     def get_bitcoin_price():
-    logger.info("Fetching Bitcoin price from CoinMarketCap...")
+    logger.info(
+        "Fetching Bitcoin price from CoinMarketCap..."
+    )
 
     if not COINMARKETCAP_API_KEY:
         raise RuntimeError(
@@ -405,6 +408,7 @@ def has_significant_change(
         raise RuntimeError(
             "Could not fetch Bitcoin price from CoinMarketCap"
         ) from error
+    
 
     return False
 
