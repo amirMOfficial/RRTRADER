@@ -648,7 +648,7 @@ def get_price(symbol):
 def extract_cmc_error(data):
 
     if not isinstance(data, dict):
-        return None
+        return "Invalid JSON response"
 
     status = data.get("status")
 
@@ -657,15 +657,20 @@ def extract_cmc_error(data):
 
     error_code = status.get("error_code")
 
-    if error_code is not None and error_code != 0:
+    # CoinMarketCap may return 0 or "0" for success.
+    if error_code is None:
+        return None
 
-        return (
-            f"CoinMarketCap API error "
-            f"{error_code}: "
-            f"{status.get('error_message', '')}"
-        )
+    if str(error_code) == "0":
+        return None
 
-    return None
+    error_message = status.get("error_message") or ""
+
+    return (
+        f"CoinMarketCap API error "
+        f"{error_code}: "
+        f"{error_message}"
+    )None
 
 
 def extract_bitcoin_from_cmc(data):
