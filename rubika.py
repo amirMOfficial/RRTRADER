@@ -670,7 +670,7 @@ def extract_cmc_error(data):
         f"CoinMarketCap API error "
         f"{error_code}: "
         f"{error_message}"
-    )None
+    )
 
 
 def extract_bitcoin_from_cmc(data):
