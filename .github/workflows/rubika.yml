@@ -11,11 +11,9 @@ permissions:
 
 jobs:
   rubika-report:
-
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -33,9 +31,9 @@ jobs:
 
       - name: Run Rubika report
         env:
-  RUBIKA_BOT_TOKEN: ${{ secrets.RUBIKA_BOT_TOKEN }}
-  RUBIKA_CHANNEL_USERNAME: ${{ secrets.RUBIKA_CHANNEL_USERNAME }}
-  COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
+          RUBIKA_BOT_TOKEN: ${{ secrets.RUBIKA_BOT_TOKEN }}
+          RUBIKA_CHANNEL_USERNAME: ${{ secrets.RUBIKA_CHANNEL_USERNAME }}
+          COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
         run: |
           python rubika.py
 
