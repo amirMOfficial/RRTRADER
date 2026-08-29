@@ -33,8 +33,9 @@ jobs:
 
       - name: Run Rubika report
         env:
-          RUBIKA_BOT_TOKEN: ${{ secrets.RUBIKA_BOT_TOKEN }}
-          COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
+  RUBIKA_BOT_TOKEN: ${{ secrets.RUBIKA_BOT_TOKEN }}
+  RUBIKA_CHANNEL_USERNAME: ${{ secrets.RUBIKA_CHANNEL_USERNAME }}
+  COINMARKETCAP_API_KEY: ${{ secrets.COINMARKETCAP_API_KEY }}
         run: |
           python rubika.py
 
