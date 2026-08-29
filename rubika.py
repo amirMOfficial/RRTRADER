@@ -957,29 +957,65 @@ def build_message(
 # RUBIKA
 # =========================================================
 
+# =========================================================
+# RUBIKA
+# =========================================================
+
 def rubika_request(
     token,
     method,
     input_data,
 ):
+    if not token:
+        raise RuntimeError(
+            "RUBIKA_BOT_TOKEN is missing"
+        )
 
-    url = "https://botapi.rubika.ir/v3/"
-
-    payload = {
-        "token": token,
-        "method": method,
-        "input": input_data,
-    }
-
-    response = session.post(
-        url,
-        json=payload,
-        timeout=TIMEOUT,
+    url = (
+        f"https://botapi.rubika.ir/v3/"
+        f"{token}/{method}"
     )
 
-    response.raise_for_status()
+    try:
+        response = session.post(
+            url,
+            json=input_data or {},
+            timeout=TIMEOUT,
+        )
 
-    data = response.json()
+        logger.info(
+            "Rubika API HTTP %s | method=%s",
+            response.status_code,
+            method,
+        )
+
+        response.raise_for_status()
+
+    except requests.RequestException as error:
+        logger.error(
+            "Rubika API request failed: %s",
+            error,
+        )
+
+        if hasattr(error, "response") and error.response is not None:
+            logger.error(
+                "Rubika response body: %s",
+                error.response.text[:1000],
+            )
+
+        raise
+
+    try:
+        data = response.json()
+
+    except ValueError as error:
+        logger.error(
+            "Rubika returned invalid JSON: %s",
+            response.text[:1000],
+        )
+        raise RuntimeError(
+            "Invalid JSON response from Rubika API"
+        ) from error
 
     logger.info(
         "Rubika API response: %s",
@@ -989,70 +1025,19 @@ def rubika_request(
     return data
 
 
-def get_rubika_channel_id():
-
-    if not RUBIKA_BOT_TOKEN:
-        raise RuntimeError(
-            "RUBIKA_BOT_TOKEN is missing"
-        )
-
-    result = rubika_request(
-        RUBIKA_BOT_TOKEN,
-        "getChat",
-        {
-            "chat_id": RUBIKA_CHANNEL_USERNAME
-        },
-    )
-
-    if not isinstance(result, dict):
-        raise RuntimeError(
-            "Invalid Rubika response"
-        )
-
-    if result.get("status") != "OK":
-
-        raise RuntimeError(
-            "Rubika getChat failed: "
-            + str(result)
-        )
-
-    chat = result.get("data", {})
-
-    chat_id = (
-        chat.get("chat_id")
-        or chat.get("object_guid")
-    )
-
-    if not chat_id:
-
-        raise RuntimeError(
-            "Could not resolve Rubika channel ID"
-        )
-
-    logger.info(
-        "Rubika channel resolved: %s",
-        chat_id,
-    )
-
-    return chat_id
-
-
 def send_rubika(message):
 
     if not RUBIKA_BOT_TOKEN:
-
         raise RuntimeError(
             "RUBIKA_BOT_TOKEN is missing"
         )
 
-    channel_id = get_rubika_channel_id()
-
-    # Rubika Bot API supports text.
-    # Convert the Telegram HTML formatting to simple text
-    # so HTML tags are not displayed literally.
+    # -----------------------------------------------------
+    # Convert Telegram HTML formatting to plain text
+    # -----------------------------------------------------
 
     rubika_message = re.sub(
-        r"<a\s+href=\"([^\"]+)\">(.*?)</a>",
+        r'<a\s+href="([^"]+)">(.*?)</a>',
         r"\2: \1",
         message,
         flags=re.IGNORECASE,
@@ -1063,6 +1048,29 @@ def send_rubika(message):
         "",
         rubika_message,
         flags=re.IGNORECASE,
+    )
+
+    # -----------------------------------------------------
+    # IMPORTANT:
+    # Rubika channel username can be used as chat_id
+    # only if the Bot API accepts it.
+    #
+    # We first try @irrusdt.
+    # -----------------------------------------------------
+
+    channel_id = RUBIKA_CHANNEL_USERNAME
+
+    if not channel_id:
+        raise RuntimeError(
+            "RUBIKA_CHANNEL_USERNAME is missing"
+        )
+
+    if not channel_id.startswith("@"):
+        channel_id = "@" + channel_id
+
+    logger.info(
+        "Sending Rubika message to channel: %s",
+        channel_id,
     )
 
     result = rubika_request(
@@ -1080,7 +1088,6 @@ def send_rubika(message):
         )
 
     if result.get("status") != "OK":
-
         raise RuntimeError(
             "Rubika sendMessage failed: "
             + str(result)
