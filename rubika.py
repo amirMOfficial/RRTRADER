@@ -35,7 +35,7 @@ TEHRAN_TZ = ZoneInfo("Asia/Tehran")
 CHANGE_THRESHOLD = Decimal("1")
 
 STATE_DIR = Path("data")
-STATE_FILE = STATE_DIR / "last_prices_rubika.json"
+STATE_FILE = STATE_DIR / "last_prices.json"
 
 
 # =========================================================
