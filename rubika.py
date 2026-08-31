@@ -19,7 +19,7 @@ from bs4 import BeautifulSoup
 TGJU_BASE_URL = "https://www.tgju.org/profile"
 
 RUBIKA_BOT_TOKEN = os.getenv("RUBIKA_BOT_TOKEN")
-RUBIKA_CHANNEL_USERNAME = "irrusdt"
+RUBIKA_CHANNEL_USERNAME = os.getenv("RUBIKA_CHANNEL_USERNAME")
 
 COINMARKETCAP_API_KEY = os.getenv("COINMARKETCAP_API_KEY")
 
