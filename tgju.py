@@ -30,7 +30,7 @@ TIMEOUT = 30
 
 TEHRAN_TZ = ZoneInfo("Asia/Tehran")
 
-CHANGE_THRESHOLD = Decimal("2")
+CHANGE_THRESHOLD = Decimal("1")
 
 STATE_DIR = Path("data")
 STATE_FILE = STATE_DIR / "last_prices.json"
@@ -398,7 +398,7 @@ def has_significant_change(
         if abs(change) >= CHANGE_THRESHOLD:
 
             logger.info(
-                "2%% threshold reached: %s",
+                "1%% threshold reached: %s",
                 market["name"],
             )
 
@@ -431,7 +431,7 @@ def has_significant_change(
         if abs(btc_change) >= CHANGE_THRESHOLD:
 
             logger.info(
-                "2%% threshold reached: بیت‌کوین"
+                "1%% threshold reached: بیت‌کوین"
             )
 
             return True
