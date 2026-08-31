@@ -1152,21 +1152,22 @@ def main():
 
     if daily_report or significant_change:
 
-        message = build_message(
-            prices,
-            previous_state,
-        )
+    message = build_message(
+        prices,
+        previous_state,
+    )
 
-        send_rubika(message)
+    send_rubika(message)
 
-    else:
-
-        logger.info(
-            "No significant change. "
-            "No Rubika message will be sent."
-        )
-
+    # فقط بعد از ارسال موفق پیام،
+    # قیمت فعلی به عنوان قیمت مرجع جدید ذخیره می‌شود.
     save_state(prices)
+
+else:
+    logger.info(
+        "No significant change. "
+        "No Rubika message will be sent."
+    )
 
 
 if __name__ == "__main__":
