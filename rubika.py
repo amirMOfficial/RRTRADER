@@ -1163,11 +1163,11 @@ def main():
     # قیمت فعلی به عنوان قیمت مرجع جدید ذخیره می‌شود.
         save_state(prices)
 
-else:
-    logger.info(
-        "No significant change. "
-        "No Rubika message will be sent."
-    )
+    else:
+        logger.info(
+            "No significant change. "
+            "No Rubika message will be sent."
+        )
 
 
 if __name__ == "__main__":
