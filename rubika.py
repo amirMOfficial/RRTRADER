@@ -1082,38 +1082,38 @@ def send_rubika(message):
 #    for attempt in range(1, max_attempts + 1):
 
 #        logger.info(
- #           "Rubika sendMessage attempt %d/%d",
+#           "Rubika sendMessage attempt %d/%d",
 #            attempt,
 #            max_attempts,
 #        )
 
-        try:
+    try:
 
-            result = rubika_request(
-                RUBIKA_BOT_TOKEN,
-                "sendMessage",
-                payload,
-            )
+        result = rubika_request(
+             RUBIKA_BOT_TOKEN,
+             "sendMessage",
+              payload,
+         )
 
-            logger.info(
-                "Rubika sendMessage raw response: %s",
-                result,
-            )
+        logger.info(
+            "Rubika sendMessage raw response: %s",
+             result,
+         )
 
-            if not isinstance(result, dict):
-                raise RuntimeError(
-                    "Invalid Rubika sendMessage response"
-                )
-
-            if result.get("status") == "OK":
-                logger.info(
-                    "Rubika message sent successfully."
-                )
-                return
-
+         if not isinstance(result, dict):
             raise RuntimeError(
-                "Rubika sendMessage failed: "
-                + str(result)
+               "Invalid Rubika sendMessage response"
+            )
+
+        if result.get("status") == "OK":
+             logger.info(
+                "Rubika message sent successfully."
+            )
+             return
+
+         raise RuntimeError(
+             "Rubika sendMessage failed: "
+             + str(result)
             )
 
         except requests.HTTPError as error:
