@@ -1095,10 +1095,10 @@ def send_rubika(message):
               payload,
          )
 
-         logger.info(
-            "Rubika sendMessage raw response: %s",
+        logger.info(
+           "Rubika sendMessage raw response: %s",
              result,
-         )
+        )
 
      if not isinstance(result, dict):
         raise RuntimeError(
