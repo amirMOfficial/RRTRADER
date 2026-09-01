@@ -1077,15 +1077,15 @@ def send_rubika(message):
     # Retry
     # -----------------------------------------------------
 
-    max_attempts = 3
+#    max_attempts = 3
 
-    for attempt in range(1, max_attempts + 1):
+#    for attempt in range(1, max_attempts + 1):
 
-        logger.info(
-            "Rubika sendMessage attempt %d/%d",
-            attempt,
-            max_attempts,
-        )
+#        logger.info(
+ #           "Rubika sendMessage attempt %d/%d",
+#            attempt,
+#            max_attempts,
+#        )
 
         try:
 
