@@ -1095,76 +1095,77 @@ def send_rubika(message):
               payload,
          )
 
-        logger.info(
+         logger.info(
             "Rubika sendMessage raw response: %s",
              result,
          )
 
-         if not isinstance(result, dict):
-            raise RuntimeError(
-               "Invalid Rubika sendMessage response"
-            )
+     if not isinstance(result, dict):
+        raise RuntimeError(
+             "Invalid Rubika sendMessage response"
+         )
 
-        if result.get("status") == "OK":
-             logger.info(
+     if result.get("status") == "OK":
+         logger.info(
                 "Rubika message sent successfully."
-            )
-             return
+         )
+        return
 
-         raise RuntimeError(
-             "Rubika sendMessage failed: "
-             + str(result)
-            )
+    raise RuntimeError(
+        "Rubika sendMessage failed: "
+         + str(result)
+         )
 
-        except requests.HTTPError as error:
+     except requests.HTTPError as error:
 
-            response = getattr(
-                error,
-                "response",
-                None,
-            )
+        response = getattr(
+           error,
+           "response",
+           None,
+         )
 
-            status_code = (
-                response.status_code
-                if response is not None
-                else None
-            )
+     status_code = (
+          response.status_code
+         if response is not None
+           else None
+      )
 
-            response_body = (
-                response.text[:2000]
-                if response is not None
-                else ""
-            )
+      response_body = (
+         response.text[:2000]
+          if response is not None
+            else ""
+        )
 
-            logger.error(
-                "Rubika HTTP error | attempt=%d | "
-                "status=%s | body=%s",
-                attempt,
-                status_code,
-                response_body,
-            )
+         logger.error(
+            "Rubika HTTP error | attempt=%d | "
+            "status=%s | body=%s",
+            attempt,
+            status_code,
+                
+            response_body,
+        )
 
-            if attempt >= max_attempts:
-                raise
+        if attempt >= max_attempts:
+            raise
 
-        except requests.RequestException as error:
+    except requests.RequestException as error:
 
-            logger.error(
-                "Rubika network error | attempt=%d | %s",
-                attempt,
-                error,
-            )
+        logger.error(
+            "Rubika network error | attempt=%d | %s",
+            attempt,
+            error,
+        )
 
-            if attempt >= max_attempts:
-                raise
+        if attempt >= max_attempts:
+            raise
 
-        except Exception as error:
+    except Exception as error:
 
-            logger.error(
-                "Rubika send error | attempt=%d | %s",
-                attempt,
-                error,
-            )
+        logger.error(
+            "Rubika send error | attempt=%d | %s",
+            attempt,
+            error,
+        )
 
             if attempt >= max_attempts:
                 raise
