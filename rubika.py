@@ -947,7 +947,7 @@ def build_message(
         "<b>——————————</b>\n"
         "\n"
         '🔗 <b>خرید و فروش آنلاین:</b> '
-        '<a href="https://bitpin.ir/signup/?ref=oDdSXxtY">'
+        '<a href="https://bitpin.ir/signup/?ref=u9skcziwl8">'
         "bitpin"
         "</a>"
     )
